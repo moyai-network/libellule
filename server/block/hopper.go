@@ -73,7 +73,7 @@ func (h Hopper) BreakInfo() BreakInfo {
 }
 
 // Inventory returns the inventory of the hopper.
-func (h Hopper) Inventory() *inventory.Inventory {
+func (h Hopper) Inventory(w *world.World, pos cube.Pos) *inventory.Inventory {
 	return h.inventory
 }
 
@@ -163,7 +163,7 @@ type HopperInsertable interface {
 // insertItem inserts an item into a container from the hopper.
 func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 	dest, ok := w.Block(pos.Side(h.Facing)).(Container)
-	if !ok || dest.Inventory() == nil {
+	if !ok || dest.Inventory(w, pos) == nil {
 		return false
 	}
 
@@ -173,7 +173,7 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 		}
 
 		if e, ok := dest.(HopperInsertable); !ok {
-			_, err := dest.Inventory().AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
+			_, err := dest.Inventory(w, pos).AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
 			if err != nil {
 				// The destination is full.
 				continue
@@ -181,7 +181,7 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 		} else {
 			stack := sourceStack.Grow(-sourceStack.Count() + 1)
 			allowed, targetSlot := e.InsertItem(stack, h.Facing)
-			it, _ := e.Inventory().Item(targetSlot)
+			it, _ := e.Inventory(w, pos).Item(targetSlot)
 			if !allowed || !sourceStack.Comparable(it) {
 				// The items are not the same.
 				continue
@@ -190,7 +190,7 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 				stack = it.Grow(1)
 			}
 
-			_ = dest.Inventory().SetItem(targetSlot, stack)
+			_ = dest.Inventory(w, pos).SetItem(targetSlot, stack)
 		}
 
 		_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
@@ -212,7 +212,7 @@ type HopperExtractable interface {
 // extractItem extracts an item from a container into the hopper.
 func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 	origin, ok := w.Block(pos.Side(cube.FaceUp)).(Container)
-	if !ok || origin.Inventory() == nil {
+	if !ok || origin.Inventory(w, pos) == nil {
 		return false
 	}
 
@@ -221,7 +221,7 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 		targetStack item.Stack
 	)
 	if e, ok := origin.(HopperExtractable); !ok {
-		for slot, stack := range origin.Inventory().Slots() {
+		for slot, stack := range origin.Inventory(w, pos).Slots() {
 			if stack.Empty() {
 				continue
 			}
@@ -241,7 +241,7 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 		// The hopper is full.
 		return false
 	}
-	_ = origin.Inventory().SetItem(targetSlot, targetStack.Grow(-1))
+	_ = origin.Inventory(w, pos).SetItem(targetSlot, targetStack.Grow(-1))
 	return true
 }
 

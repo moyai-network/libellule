@@ -199,11 +199,6 @@ func (c Chest) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
 
-// Paired returns whether the chest is paired with another chest.
-func (c Chest) Paired() bool {
-	return c.paired
-}
-
 // pair pairs this chest with the given chest position.
 func (c Chest) pair(w *world.World, pos, pairPos cube.Pos) (ch, pair Chest, ok bool) {
 	pair, ok = w.Block(pairPos).(Chest)
@@ -357,28 +352,6 @@ func (c Chest) Pair(w *world.World, pos, pairPos cube.Pos) (ch, pair Chest, ok b
 	c.viewerMu, pair.viewerMu = m, m
 	c.viewers, pair.viewers = v, v
 	c.pairInv, pair.pairInv = double, double
-	return c, pair, true
-}
-
-// unpair ...
-func (c Chest) unpair(w *world.World, pos cube.Pos) (ch, pair Chest, ok bool) {
-	if !c.paired {
-		return c, Chest{}, false
-	}
-
-	pair, ok = w.Block(c.PairPos(pos)).(Chest)
-	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
-		return c, pair, false
-	}
-
-	if len(c.viewers) != 0 {
-		c.close(w, pos)
-	}
-
-	c.paired, pair.paired = false, false
-	c.viewerMu, pair.viewerMu = new(sync.RWMutex), new(sync.RWMutex)
-	c.viewers, pair.viewers = make(map[ContainerViewer]struct{}, 1), make(map[ContainerViewer]struct{}, 1)
-	c.pairInv, pair.pairInv = nil, nil
 	return c, pair, true
 }
 
